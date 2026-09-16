@@ -115,8 +115,13 @@
                 </div>
                 <h1 class="text-3xl text-primary tracking-tight font-title mt-1">Daily Notes</h1>
             </div>
-            <div class="text-sm font-bold text-accent uppercase tracking-wide" id="current-date-display">
-                <!-- Date will be injected here -->
+            <div class="flex items-center gap-4">
+                <div class="text-sm font-bold text-accent uppercase tracking-wide" id="current-date-display">
+                    <!-- Date will be injected here -->
+                </div>
+                <button id="open-settings-btn" class="text-primary hover:text-accent transition-colors p-2 rounded-lg hover:bg-white/50 border border-transparent hover:border-secondary/20 shadow-sm" title="Settings">
+                    <i class="fas fa-cog text-xl"></i>
+                </button>
             </div>
         </div>
     </header>
@@ -236,6 +241,36 @@
             </div>
         </div>
 
+        <!-- Settings View (Hidden by default) -->
+        <div id="settings-view" class="hidden flex-1 overflow-hidden flex flex-col bg-white rounded-2xl shadow-lg border border-secondary/30 p-5 md:p-8 w-full">
+            <button id="close-settings-btn" class="self-start mb-6 text-accent hover:text-primary transition-colors flex items-center gap-2 font-medium bg-background/50 px-4 py-2 rounded-lg border border-secondary/20 hover:bg-secondary/20">
+                <i class="fas fa-arrow-left"></i> Back to Tasks
+            </button>
+            
+            <div class="border-b border-secondary/30 pb-4 mb-6">
+                <h2 class="text-xl md:text-3xl font-bold text-primary flex items-center gap-3">
+                    <i class="fas fa-cog text-accent"></i> Settings
+                </h2>
+            </div>
+
+            <div class="space-y-6 flex-1">
+                <div class="bg-background/30 p-5 md:p-6 rounded-xl border border-secondary/20">
+                    <h3 class="text-lg font-bold text-primary mb-2 flex items-center gap-2">
+                        <i class="fas fa-robot text-accent"></i> AI Configuration
+                    </h3>
+                    <p class="text-sm text-secondary mb-5">To use the AI Schedule Assistant, you need to provide a Gemini API Key. This key is stored securely in your browser's local storage.</p>
+                    
+                    <label for="api-key-input" class="block text-sm font-semibold text-primary mb-2">Gemini API Key</label>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <input type="password" id="api-key-input" class="flex-1 bg-white border border-secondary/40 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-accent outline-none text-sm text-primary" placeholder="Paste your API key here...">
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" class="bg-secondary/20 hover:bg-secondary/40 text-primary px-5 py-2.5 rounded-xl transition-colors flex items-center justify-center whitespace-nowrap font-medium text-sm shadow-sm border border-secondary/30">
+                            <i class="fas fa-external-link-alt mr-2"></i> Get Free Key
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <script>
@@ -267,6 +302,11 @@
         const taskCommentInput = document.getElementById('task-comment');
         const saveCommentBtn = document.getElementById('save-comment-btn');
         let currentEditingTaskId = null;
+        
+        // Settings Elements
+        const settingsView = document.getElementById('settings-view');
+        const openSettingsBtn = document.getElementById('open-settings-btn');
+        const closeSettingsBtn = document.getElementById('close-settings-btn');
 
         // Helper: Format date for storage key (YYYY-MM-DD)
         function getStorageKey(date) {
@@ -549,14 +589,45 @@
             updateDateUI();
         });
 
+        // Settings Navigation
+        openSettingsBtn.addEventListener('click', () => {
+            mainView.classList.add('hidden');
+            detailView.classList.add('hidden');
+            settingsView.classList.remove('hidden');
+        });
+        
+        closeSettingsBtn.addEventListener('click', () => {
+            settingsView.classList.add('hidden');
+            mainView.classList.remove('hidden');
+        });
+
         const sideActivityInput = document.getElementById('side-activity-input');
         const askAiBtn = document.getElementById('ask-ai-btn');
         const aiLoading = document.getElementById('ai-loading');
         const aiResponse = document.getElementById('ai-response');
+        const apiKeyInput = document.getElementById('api-key-input');
+
+        // Load saved API key
+        const savedApiKey = localStorage.getItem('dailyNotesApp_apiKey');
+        if (savedApiKey) {
+            apiKeyInput.value = savedApiKey;
+        }
+
+        // Save API key when changed
+        apiKeyInput.addEventListener('input', (e) => {
+            localStorage.setItem('dailyNotesApp_apiKey', e.target.value.trim());
+        });
 
         askAiBtn.addEventListener('click', async () => {
             const activity = sideActivityInput.value.trim();
             if (!activity) return;
+
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                aiResponse.innerHTML = `<div class="flex flex-col gap-2"><div class="flex items-center gap-2 text-accent"><i class="fas fa-exclamation-triangle"></i> Missing API Key.</div><button onclick="document.getElementById('open-settings-btn').click()" class="text-left text-sm font-bold text-primary hover:text-accent underline transition-colors">Go to Settings to configure it</button></div>`;
+                aiResponse.classList.remove('hidden');
+                return;
+            }
 
             // Gather current day schedule context
             const dateKey = getStorageKey(currentDate);
@@ -576,8 +647,6 @@
             askAiBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
             try {
-                // The Canvas automatically provides the API Key when it is left empty
-                const apiKey = ""; 
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
                 
                 const payload = {
