@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Activity Notes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2D0000', // Dark Maroon
+                        accent: '#6D0808', // Deep Crimson
+                        secondary: '#757D6F', // Muted Sage Green
+                        background: '#EEEAD7', // Beige
+                        dark: '#1A0000', // Extra dark for hover states
+                    },
+                    fontFamily: {
+                        sans: ['"PT Sans"', 'sans-serif'],
+                        title: ['"Fascinate"', 'display'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fascinate&family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+        
+        body {
+            font-family: 'PT Sans', sans-serif;
+            background-color: #EEEAD7; 
+        }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #EEEAD7; /* Updated background */
+        }
+
+        /* Custom scrollbar for task list */
+        .task-list-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .task-list-container::-webkit-scrollbar-track {
+            background: rgba(117, 125, 111, 0.2); /* Soft secondary */
+            border-radius: 10px;
+        }
+        .task-list-container::-webkit-scrollbar-thumb {
+            background-color: #757D6F; /* Secondary color */
+            border-radius: 10px;
+        }
+        .task-list-container::-webkit-scrollbar-thumb:hover {
+            background-color: #6D0808; /* Accent color */
+        }
+        
+        /* Smooth transition for task items */
+        .task-item {
+            transition: all 0.2s ease-in-out;
+            border-color: rgba(109, 8, 8, 0.1); /* Accent tinted border */
+        }
+        .task-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px -2px rgba(45, 0, 0, 0.15); /* Primary tinted shadow */
+            border-color: #757D6F;
+        }
+        
+        /* Checkbox custom style */
+        .custom-checkbox {
+            appearance: none;
+            background-color: #fff;
+            margin: 0;
+            font: inherit;
+            border: 2px solid #757D6F; /* Secondary */
+            border-radius: 0.25em;
+            display: grid;
+            place-content: center;
+        }
+
+        .custom-checkbox::before {
+            content: "";
+            width: 0.65em;
+            height: 0.65em;
+            transform: scale(0);
+            transition: 120ms transform ease-in-out;
+            box-shadow: inset 1em 1em white;
+            background-color: white;
+            transform-origin: center;
+            clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+        }
+
+        .custom-checkbox:checked {
+            background-color: #6D0808; /* Accent */
+            border-color: #6D0808;
+        }
+
+        .custom-checkbox:checked::before {
+            transform: scale(1);
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased h-screen flex flex-col">
+
+    <header class="bg-white/80 backdrop-blur-md shadow-sm border-b border-secondary/30 py-4 px-6 sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-primary text-background p-2 rounded-xl shadow-inner">
+                    <i class="fas fa-clipboard-list text-xl"></i>
+                </div>
+                <h1 class="text-3xl text-primary tracking-tight font-title mt-1">Daily Notes</h1>
+            </div>
+            <div class="text-sm font-bold text-accent uppercase tracking-wide" id="current-date-display">
+                <!-- Date will be injected here -->
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-hidden flex flex-col max-w-4xl w-full mx-auto p-4 md:p-6 gap-6">
+        
+        <!-- Main Application View -->
+        <div id="main-view" class="flex-1 overflow-hidden flex flex-col w-full gap-6">
+            <!-- Top Controls: Date Selector & Add Task -->
+            <div class="flex flex-col md:flex-row gap-4 bg-white/60 backdrop-blur-sm p-4 rounded-2xl shadow-sm border border-secondary/20">
+            <div class="flex items-center justify-between md:justify-start bg-background/50 rounded-xl p-1 flex-shrink-0 border border-secondary/20">
+                <button id="prev-day-btn" class="p-2 text-primary hover:text-white hover:bg-secondary rounded-lg transition-colors" title="Previous Day">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="px-4 font-semibold text-center min-w-[140px] text-primary" id="selected-date-display">
+                    Today
+                </div>
+                <button id="next-day-btn" class="p-2 text-primary hover:text-white hover:bg-secondary rounded-lg transition-colors" title="Next Day">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                <button id="today-btn" class="ml-2 text-xs font-medium bg-white px-3 py-1.5 rounded-lg text-accent border border-secondary/30 hover:bg-background transition-colors hidden md:block shadow-sm">
+                    Today
+                </button>
+            </div>
+
+            <!-- Add Task Input -->
+            <form id="add-task-form" class="flex-1 flex gap-2">
+                <input type="text" id="new-task-input" 
+                       class="flex-1 bg-white border border-secondary/30 rounded-xl px-4 py-3 focus:ring-2 focus:ring-accent focus:border-transparent transition-all text-sm outline-none text-primary placeholder-secondary" 
+                       placeholder="What do you need to do on this day?..." required>
+                <button type="submit" 
+                        class="bg-primary hover:bg-dark text-background px-6 py-3 rounded-xl font-medium transition-colors flex items-center gap-2 shadow-md whitespace-nowrap">
+                    <i class="fas fa-plus"></i> <span class="hidden sm:inline">Add</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Task List Area -->
+        <div class="flex-1 flex flex-col bg-white rounded-2xl shadow-md border border-secondary/30 overflow-hidden">
+            
+            <!-- List Header with Stats -->
+            <div class="px-6 py-4 border-b border-secondary/20 flex justify-between items-center bg-background/30">
+                <h2 class="font-semibold text-primary flex items-center gap-2">
+                    <i class="far fa-calendar-check text-accent"></i> Tasks for <span id="list-header-date" class="text-dark font-bold">Today</span>
+                </h2>
+                <div class="text-sm font-medium bg-secondary/20 text-primary px-4 py-1.5 rounded-full border border-secondary/30" id="task-stats">
+                    0/0 Completed
+                </div>
+            </div>
+
+            <!-- The Actual List -->
+            <div class="flex-1 overflow-y-auto task-list-container p-4 md:p-6" id="task-list">
+                <!-- Tasks will be rendered here dynamically -->
+                
+                <!-- Empty State (Hidden by default) -->
+                <div id="empty-state" class="h-full flex flex-col items-center justify-center text-accent gap-4 hidden">
+                    <div class="w-20 h-20 bg-background rounded-full flex items-center justify-center mb-2 shadow-inner border border-secondary/30">
+                        <i class="fas fa-mug-hot text-3xl text-primary"></i>
+                    </div>
+                    <p class="text-xl font-medium text-primary">No tasks for this day yet.</p>
+                    <p class="text-sm text-accent">Enjoy your free time or add a new activity above!</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- AI Assistant Section -->
+        <div class="bg-white rounded-2xl shadow-md border border-secondary/30 p-4 md:p-6 shrink-0">
+            <h3 class="text-lg font-bold text-primary mb-3 flex items-center gap-2">
+                <i class="fas fa-magic text-accent"></i> AI Schedule Assistant
+            </h3>
+            <p class="text-xs text-secondary mb-3">Want to do something extra? Tell me what it is, and I'll suggest a time based on today's tasks.</p>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <input type="text" id="side-activity-input" 
+                       class="flex-1 bg-background/30 border border-secondary/30 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-accent focus:border-transparent transition-all outline-none text-primary placeholder-secondary/80 text-sm" 
+                       placeholder="E.g., Read a book for 30 mins, Call Mom...">
+                <button id="ask-ai-btn" class="bg-secondary hover:bg-primary text-background px-5 py-2.5 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 shadow-sm text-sm whitespace-nowrap">
+                    <i class="fas fa-sparkles"></i> Suggest Time
+                </button>
+            </div>
+            <div id="ai-loading" class="hidden mt-4 text-sm text-secondary flex items-center gap-2 font-medium">
+                <i class="fas fa-spinner fa-spin text-accent"></i> Analyzing your routine...
+            </div>
+            <div id="ai-response" class="hidden mt-4 p-4 bg-background/50 rounded-xl border border-secondary/30 text-primary text-sm leading-relaxed">
+                <!-- Response will appear here -->
+            </div>
+        </div>
+
+        </div>
+
+        <!-- Task Detail & Comment View (Hidden by default) -->
+        <div id="detail-view" class="hidden flex-1 overflow-hidden flex flex-col bg-white rounded-2xl shadow-lg border border-secondary/30 p-5 md:p-8 w-full">
+            <button id="back-btn" class="self-start mb-6 text-accent hover:text-primary transition-colors flex items-center gap-2 font-medium bg-background/50 px-4 py-2 rounded-lg border border-secondary/20 hover:bg-secondary/20">
+                <i class="fas fa-arrow-left"></i> Back to Tasks
+            </button>
+            
+            <div class="border-b border-secondary/30 pb-6 mb-6 flex justify-between items-start gap-4">
+                <div>
+                    <h2 id="detail-task-title" class="text-xl md:text-3xl font-bold text-primary break-words leading-tight">Task Title</h2>
+                    <p class="text-sm text-accent mt-2 font-medium"><i class="far fa-calendar-alt mr-1"></i> <span id="detail-task-date">Date</span></p>
+                </div>
+                <div id="detail-task-status" class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm shrink-0">Pending</div>
+            </div>
+
+            <div class="flex-1 flex flex-col h-full min-h-[200px]">
+                <label for="task-comment" class="block text-sm font-semibold text-primary mb-3 flex items-center gap-2">
+                    <i class="far fa-edit text-accent"></i> Notes & Comments
+                </label>
+                <textarea id="task-comment" 
+                          class="flex-1 w-full bg-background/20 border border-secondary/40 rounded-xl p-5 focus:ring-2 focus:ring-accent focus:bg-white focus:border-transparent transition-all outline-none resize-none text-primary leading-relaxed" 
+                          placeholder="Add more details, progress notes, or comments about this task..."></textarea>
+            </div>
+            
+            <div class="mt-6 flex justify-end">
+                <button id="save-comment-btn" class="bg-primary hover:bg-dark text-background px-8 py-3.5 rounded-xl font-medium transition-all duration-200 flex items-center gap-2 shadow-md">
+                    <i class="fas fa-save"></i> <span>Save Notes</span>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // State Management
+        let tasks = JSON.parse(localStorage.getItem('dailyNotesApp_tasks')) || {};
+        let currentDate = new Date(); // Date being viewed
+        const todayDate = new Date(); // Actual today
+        
+        // DOM Elements
+        const taskListEl = document.getElementById('task-list');
+        const addTaskForm = document.getElementById('add-task-form');
+        const newTaskInput = document.getElementById('new-task-input');
+        const selectedDateDisplay = document.getElementById('selected-date-display');
+        const listHeaderDate = document.getElementById('list-header-date');
+        const currentDateDisplay = document.getElementById('current-date-display');
+        const prevDayBtn = document.getElementById('prev-day-btn');
+        const nextDayBtn = document.getElementById('next-day-btn');
+        const todayBtn = document.getElementById('today-btn');
+        const emptyStateEl = document.getElementById('empty-state');
+        const taskStatsEl = document.getElementById('task-stats');
+
+        // Detail View Elements
+        const mainView = document.getElementById('main-view');
+        const detailView = document.getElementById('detail-view');
+        const backBtn = document.getElementById('back-btn');
+        const detailTaskTitle = document.getElementById('detail-task-title');
+        const detailTaskDate = document.getElementById('detail-task-date');
+        const detailTaskStatus = document.getElementById('detail-task-status');
+        const taskCommentInput = document.getElementById('task-comment');
+        const saveCommentBtn = document.getElementById('save-comment-btn');
+        let currentEditingTaskId = null;
+
+        // Helper: Format date for storage key (YYYY-MM-DD)
+        function getStorageKey(date) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        // Helper: Format date for display
+        function getDisplayDate(date) {
+            const options = { weekday: 'short', month: 'short', day: 'numeric' };
+            return date.toLocaleDateString('en-US', options);
+        }
+
+        // Helper: Check if date is today
+        function isToday(date) {
+            return date.getDate() === todayDate.getDate() &&
+                   date.getMonth() === todayDate.getMonth() &&
+                   date.getFullYear() === todayDate.getFullYear();
+        }
+
+        function isTomorrow(date) {
+            const tmrw = new Date(todayDate);
+            tmrw.setDate(todayDate.getDate() + 1);
+            return date.getDate() === tmrw.getDate() &&
+                   date.getMonth() === tmrw.getMonth() &&
+                   date.getFullYear() === tmrw.getFullYear();
+        }
+
+        function isYesterday(date) {
+            const yday = new Date(todayDate);
+            yday.setDate(todayDate.getDate() - 1);
+            return date.getDate() === yday.getDate() &&
+                   date.getMonth() === yday.getMonth() &&
+                   date.getFullYear() === yday.getFullYear();
+        }
+
+        // Update UI based on currentDate
+        function updateDateUI() {
+            let relativeText = "";
+            if (isToday(currentDate)) relativeText = "Today";
+            else if (isTomorrow(currentDate)) relativeText = "Tomorrow";
+            else if (isYesterday(currentDate)) relativeText = "Yesterday";
+            else relativeText = getDisplayDate(currentDate);
+
+            selectedDateDisplay.textContent = relativeText;
+            listHeaderDate.textContent = relativeText.toLowerCase() === "today" ? "Today" : getDisplayDate(currentDate);
+            
+            // Show/Hide "Today" button based on current view
+            if(isToday(currentDate)) {
+                 todayBtn.classList.add('hidden');
+            } else {
+                 todayBtn.classList.remove('hidden');
+            }
+
+            renderTasks();
+        }
+
+        // Save to local storage
+        function saveTasks() {
+            localStorage.setItem('dailyNotesApp_tasks', JSON.stringify(tasks));
+        }
+
+        // Render tasks for the selected date
+        function renderTasks() {
+            const dateKey = getStorageKey(currentDate);
+            const currentTasks = tasks[dateKey] || [];
+            
+            // Clear current list (except empty state)
+            const children = Array.from(taskListEl.children);
+            children.forEach(child => {
+                if (child.id !== 'empty-state') {
+                    taskListEl.removeChild(child);
+                }
+            });
+
+            if (currentTasks.length === 0) {
+                emptyStateEl.classList.remove('hidden');
+                taskStatsEl.textContent = "0 Tasks";
+                return;
+            }
+
+            emptyStateEl.classList.add('hidden');
+            
+            let completedCount = 0;
+
+            currentTasks.forEach(task => {
+                if(task.completed) completedCount++;
+                
+                const taskEl = document.createElement('div');
+                // Updated styles based on new palette
+                taskEl.className = `task-item group flex items-center justify-between p-4 mb-3 rounded-xl border-2 ${task.completed ? 'bg-background/40 border-secondary/20' : 'bg-white border-transparent'} shadow-sm`;
+                
+                taskEl.innerHTML = `
+                    <div class="flex items-center gap-4 flex-1 overflow-hidden">
+                        <input type="checkbox" 
+                               class="custom-checkbox w-6 h-6 rounded-md cursor-pointer transition-colors shrink-0"
+                               ${task.completed ? 'checked' : ''}
+                               onchange="toggleTask('${task.id}')">
+                        <div class="flex-1 min-w-0 cursor-pointer" onclick="openTaskDetails('${task.id}')" title="Click to open details">
+                            <p class="text-base md:text-lg truncate transition-all duration-200 ${task.completed ? 'text-accent/60 line-through' : 'text-primary font-medium'}">
+                                ${escapeHTML(task.text)}
+                            </p>
+                            <div class="flex items-center gap-3 mt-1.5">
+                                ${task.time ? `<p class="text-xs text-accent font-medium"><i class="far fa-clock mr-1"></i> ${task.time}</p>` : ''}
+                                ${task.comment ? `<p class="text-xs text-background bg-accent px-2.5 py-0.5 rounded-full font-medium shadow-sm"><i class="far fa-comment-dots mr-1"></i> Notes</p>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-4 shrink-0">
+                        <button onclick="openTaskDetails('${task.id}')" 
+                                class="text-secondary hover:text-primary p-2.5 rounded-lg hover:bg-background transition-colors focus:opacity-100"
+                                title="Expand Details">
+                            <i class="fas fa-expand-alt"></i>
+                        </button>
+                        <button onclick="deleteTask('${task.id}')" 
+                                class="text-secondary hover:text-accent p-2.5 rounded-lg hover:bg-red-50 transition-colors focus:opacity-100"
+                                title="Delete task">
+                            <i class="far fa-trash-alt"></i>
+                        </button>
+                    </div>
+                `;
+                taskListEl.appendChild(taskEl);
+            });
+
+            taskStatsEl.textContent = `${completedCount}/${currentTasks.length} Done`;
+        }
+
+        // Add new task
+        addTaskForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = newTaskInput.value.trim();
+            if (!text) return;
+
+            const dateKey = getStorageKey(currentDate);
+            if (!tasks[dateKey]) {
+                tasks[dateKey] = [];
+            }
+
+            const now = new Date();
+            const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            const newTask = {
+                id: 'task_' + Date.now().toString(),
+                text: text,
+                completed: false,
+                time: timeString
+            };
+
+            // Add to beginning of array
+            tasks[dateKey].unshift(newTask);
+            
+            saveTasks();
+            renderTasks();
+            
+            newTaskInput.value = '';
+            newTaskInput.focus();
+        });
+
+        // Toggle task completion (made global for inline handler)
+        window.toggleTask = function(taskId) {
+            const dateKey = getStorageKey(currentDate);
+            const taskIndex = tasks[dateKey].findIndex(t => t.id === taskId);
+            
+            if (taskIndex > -1) {
+                tasks[dateKey][taskIndex].completed = !tasks[dateKey][taskIndex].completed;
+                saveTasks();
+                renderTasks();
+            }
+        };
+
+        // Delete task (made global for inline handler)
+        window.deleteTask = function(taskId) {
+            const dateKey = getStorageKey(currentDate);
+            tasks[dateKey] = tasks[dateKey].filter(t => t.id !== taskId);
+            
+            // Clean up empty date entries
+            if (tasks[dateKey].length === 0) {
+                delete tasks[dateKey];
+            }
+            
+            saveTasks();
+            renderTasks();
+        };
+
+        // Open task details view
+        window.openTaskDetails = function(taskId) {
+            const dateKey = getStorageKey(currentDate);
+            const task = tasks[dateKey].find(t => t.id === taskId);
+            if (!task) return;
+
+            currentEditingTaskId = taskId;
+            detailTaskTitle.textContent = task.text;
+            
+            const displayDate = isToday(currentDate) ? "Today" : 
+                                isTomorrow(currentDate) ? "Tomorrow" : 
+                                isYesterday(currentDate) ? "Yesterday" : 
+                                getDisplayDate(currentDate);
+            
+            detailTaskDate.textContent = `${displayDate} at ${task.time}`;
+            
+            if (task.completed) {
+                detailTaskStatus.textContent = "Completed";
+                // Styled with accent color
+                detailTaskStatus.className = "px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-accent/20 text-accent border border-accent/30 shadow-sm shrink-0";
+            } else {
+                detailTaskStatus.textContent = "Pending";
+                // Styled with secondary color
+                detailTaskStatus.className = "px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-secondary/30 text-primary border border-secondary/50 shadow-sm shrink-0";
+            }
+            
+            taskCommentInput.value = task.comment || '';
+
+            // Swap views
+            mainView.classList.add('hidden');
+            detailView.classList.remove('hidden');
+            
+            // Focus textarea for immediate typing
+            setTimeout(() => taskCommentInput.focus(), 100);
+        };
+
+        // Close details view
+        backBtn.addEventListener('click', () => {
+            mainView.classList.remove('hidden');
+            detailView.classList.add('hidden');
+            currentEditingTaskId = null;
+            renderTasks(); // Re-render to show updated note tags if changed
+        });
+
+        // Save Comment
+        saveCommentBtn.addEventListener('click', () => {
+            if (!currentEditingTaskId) return;
+            const dateKey = getStorageKey(currentDate);
+            const taskIndex = tasks[dateKey].findIndex(t => t.id === currentEditingTaskId);
+
+            if (taskIndex > -1) {
+                // Update and persist the comment text
+                tasks[dateKey][taskIndex].comment = taskCommentInput.value.trim();
+                saveTasks();
+                
+                // Provide visual feedback for save action
+                const originalIcon = '<i class="fas fa-save"></i>';
+                saveCommentBtn.innerHTML = '<i class="fas fa-check"></i> <span>Saved!</span>';
+                saveCommentBtn.classList.replace('bg-primary', 'bg-accent');
+                saveCommentBtn.classList.replace('hover:bg-dark', 'hover:bg-opacity-90');
+                
+                // Revert button back to default state
+                setTimeout(() => {
+                    saveCommentBtn.innerHTML = `${originalIcon} <span>Save Notes</span>`;
+                    saveCommentBtn.classList.replace('bg-accent', 'bg-primary');
+                    saveCommentBtn.classList.replace('hover:bg-opacity-90', 'hover:bg-dark');
+                }, 2000);
+            }
+        });
+
+        // Utility to prevent XSS
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag])
+            );
+        }
+
+        // Navigation Events
+        prevDayBtn.addEventListener('click', () => {
+            currentDate.setDate(currentDate.getDate() - 1);
+            updateDateUI();
+        });
+
+        nextDayBtn.addEventListener('click', () => {
+            currentDate.setDate(currentDate.getDate() + 1);
+            updateDateUI();
+        });
+
+        todayBtn.addEventListener('click', () => {
+            currentDate = new Date();
+            updateDateUI();
+        });
+
+        const sideActivityInput = document.getElementById('side-activity-input');
+        const askAiBtn = document.getElementById('ask-ai-btn');
+        const aiLoading = document.getElementById('ai-loading');
+        const aiResponse = document.getElementById('ai-response');
+
+        askAiBtn.addEventListener('click', async () => {
+            const activity = sideActivityInput.value.trim();
+            if (!activity) return;
+
+            // Gather current day schedule context
+            const dateKey = getStorageKey(currentDate);
+            const currentTasks = tasks[dateKey] || [];
+            
+            let scheduleText = "No tasks scheduled for today yet. The day is completely open.";
+            if (currentTasks.length > 0) {
+                scheduleText = currentTasks.map(t => `- ${t.text} (Added at: ${t.time}, Completed: ${t.completed ? 'Yes' : 'No'})`).join('\n');
+            }
+
+            const prompt = `I want to fit this side activity into my day: "${activity}". \n\nHere is my current schedule/task list for this day:\n${scheduleText}\n\nPlease suggest a good specific time or slot for me to do this side activity, and briefly explain why it fits well based on my tasks. Keep your response under 3 sentences, use a friendly tone, and keep it very concise.`;
+
+            // UI Loading state update
+            aiLoading.classList.remove('hidden');
+            aiResponse.classList.add('hidden');
+            askAiBtn.disabled = true;
+            askAiBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            try {
+                // The Canvas automatically provides the API Key when it is left empty
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+                
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    systemInstruction: {
+                        parts: [{ text: "You are a smart time-management assistant. Suggest an exact time for a side activity based on the provided schedule." }]
+                    }
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0) {
+                    // Extract Markdown response and replace bolding with HTML for rendering
+                    let aiText = result.candidates[0].content.parts[0].text;
+                    aiText = aiText.replace(/\*\*(.*?)\*\*/g, '<strong class="text-accent">$1</strong>');
+                    
+                    aiResponse.innerHTML = `<div class="flex items-start gap-3"><i class="fas fa-robot text-accent mt-1 text-lg"></i> <div>${aiText}</div></div>`;
+                    aiResponse.classList.remove('hidden');
+                    sideActivityInput.value = ''; // Clear input on success
+                } else {
+                    throw new Error("Invalid response from API");
+                }
+            } catch (error) {
+                console.error("AI Error:", error);
+                aiResponse.innerHTML = `<div class="flex items-center gap-2 text-accent"><i class="fas fa-exclamation-triangle"></i> Error connecting to AI. Please try again.</div>`;
+                aiResponse.classList.remove('hidden');
+            } finally {
+                // Remove loading states
+                aiLoading.classList.add('hidden');
+                askAiBtn.disabled = false;
+                askAiBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        });
+
+        // Setup top right real-time date
+        function updateRealTimeHeader() {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            currentDateDisplay.textContent = new Date().toLocaleDateString('en-US', options);
+        }
+
+        // Initial setup
+        updateRealTimeHeader();
+        updateDateUI();
+        
+        // Optional: Keep top date updated if app stays open overnight
+        setInterval(updateRealTimeHeader, 60000); 
+
+    </script>
+</body>
+</html>
